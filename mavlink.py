@@ -35,17 +35,17 @@ class mavlink_recv_thread(threading.Thread):
             # msg = self.cur_self.connect.recv_match(type=['VFR_HUD', 'ATTITUDE'], blocking=True)
             msg = self.cur_self.connect.recv_match(blocking=True)
             print(msg)
-            # if type(msg) == MAVLink_vfr_hud_message:
-            # try:
-            #     groundspeed = str(msg.groundspeed)[0:5]
-            #     alt = str(msg.alt)[0:5]
-            #     self.main_self.ground_speed = msg.groundspeed
-            #     self.main_self.alt = msg.alt
-            #     vfr_hud = {"ground_speed": groundspeed, "alt": alt}
-            #     self.main_self.mavlink_updata_vfr_hud_signal.emit(vfr_hud)
-            # except Exception as e:
-            #     print(e)
-            #     continue
+            if type(msg) == MAVLink_vfr_hud_message:
+                try:
+                    groundspeed = str(msg.groundspeed)[0:5]
+                    alt = str(msg.alt)[0:5]
+                    self.main_self.ground_speed = msg.groundspeed
+                    self.main_self.alt = msg.alt
+                    vfr_hud = {"ground_speed": groundspeed, "alt": alt}
+                    self.main_self.mavlink_updata_vfr_hud_signal.emit(vfr_hud)
+                except Exception as e:
+                    print(e)
+                    continue
             # if type(msg) == MAVLink_attitude_message:
             # try:
             #     print(msg)
@@ -95,13 +95,6 @@ class mavlink(object):
         """关闭发送和接收线程"""
         self.recv_thread.stop()
         self.connect.close()
-
-
-# def varname(p):
-#     for line in inspect.getframeinfo(inspect.currentframe().f_back)[3]:
-#         m = re.search(r'\bvarname\s*\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*\)', line)
-#         if m:
-#             return m.group(1)
 
 
 if __name__ == "__main__":

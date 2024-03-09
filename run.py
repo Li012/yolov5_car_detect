@@ -31,7 +31,7 @@ class MyApp(QMainWindow, Ui_MainWindow):
         super().__init__()
         self.setupUi(self)  # 设置界面
         # 创建识别对象
-        self.camera = camera()
+        self.camera = camera(self)
         # 创建串口对象
         self.uart = Uart(self)
         self.flag = 1
@@ -44,6 +44,8 @@ class MyApp(QMainWindow, Ui_MainWindow):
 
         self.ground_speed = 0.0
         self.alt = 0.0
+
+        self.speed_limit = 60
 
         # ----------串口相关参数初始化----------
         self.uart_com_run_status = 0  # 串口运行状态
@@ -71,6 +73,7 @@ class MyApp(QMainWindow, Ui_MainWindow):
         self.com_config_button.clicked.connect(self.page_change)
         self.page_back_button.clicked.connect(self.page_back)
         self.goback_button.clicked.connect(self.page_back)
+        self.speed_limit_pushButton.clicked.connect(self.speed_limit_update)
 
         self.mavlink_connect_button.clicked.connect(self.mavlink_connect)
         self.mavlink_goto_button.clicked.connect(self.page_change2)
@@ -129,12 +132,14 @@ class MyApp(QMainWindow, Ui_MainWindow):
                     self.frame = f
                     if not self.camera.detect_flag:
                         Qt_frame = self.cvToQImage(f)
-                        scaled_image = Qt_frame.scaled(label_size, aspectRatioMode=True)
+                        # scaled_image = Qt_frame.scaled(label_size, aspectRatioMode=True)
+                        scaled_image = Qt_frame.scaled(label_size)
                         self.img_label.setPixmap(QPixmap.fromImage(scaled_image))
                     elif self.camera.detect_flag:
                         frame1, up_cunt, down_cunt = self.camera.detect(self.frame)
                         Qt_frame = self.cvToQImage(frame1)
-                        scaled_image = Qt_frame.scaled(label_size, aspectRatioMode=True)
+                        scaled_image = Qt_frame.scaled(label_size)
+                        # scaled_image = Qt_frame.scaled(label_size, aspectRatioMode=True)
                         self.img_label.setPixmap(QPixmap.fromImage(scaled_image))
                         self.up_count_label.setText(str(up_cunt))
                         self.down_count_label.setText(str(down_cunt))
@@ -364,6 +369,11 @@ class MyApp(QMainWindow, Ui_MainWindow):
         """更新发送计数"""
         self.uart_data_send_count += data_num
         self.uart_tx_data_count_label.setText(str(self.uart_data_send_count))
+
+    def speed_limit_update(self):
+        str1 = self.speed_limit_lineEdit.text()
+        self.speed_limit = int(str1)
+        # print(self.speed_limit)
 
     # ----------串口相关方法结束----------
 

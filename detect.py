@@ -9,7 +9,7 @@ os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
 
 class camera(object):
-    def __init__(self):
+    def __init__(self, main_self):
         # 帧率，单位为帧/秒
         self.FPS = 30
         # 摄像头打开标志位
@@ -18,6 +18,8 @@ class camera(object):
         self.detect_flag = False
         # 初始化 yolov5
         self.detector = Detector()
+
+        self.main_self = main_self
 
     def camera_open(self):
         # 打开摄像头
@@ -43,8 +45,10 @@ class camera(object):
 
     # 区域的实际宽度和像素宽度的函数关系，单位为米
     # 这里假设是一个线性函数，你可以根据你的实际情况进行修改
-    def REAL_WIDTH(self, pixel_width):
-        real_width = pixel_width / (1354.2 * (85 ** (-0.989)))
+    def REAL_WIDTH(self, height, pixel_width):
+        if height == 0:
+            height = 0.01
+        real_width = pixel_width / (1354.2 * (height ** (-0.989)))
         return real_width
 
     # 定义一个函数，根据车辆的边界框，判断车辆是否进入或离开了区域
@@ -172,8 +176,8 @@ class camera(object):
                         # 外出+1
                         self.up_count += 1
 
-                        print(
-                            f'类别: {label} | id: {track_id} | 上行撞线 | 上行撞线总数: {self.up_count} | 上行id列表: {self.list_overlapping_yellow_polygon}')
+                        # print(
+                        #     f'类别: {label} | id: {track_id} | 上行撞线 | 上行撞线总数: {self.up_count} | 上行id列表: {self.list_overlapping_yellow_polygon}')
 
                         # 删除 黄polygon list 中的此id
                         self.list_overlapping_yellow_polygon.remove(track_id)
@@ -195,8 +199,8 @@ class camera(object):
                         # 进入+1
                         self.down_count += 1
 
-                        print(
-                            f'类别: {label} | id: {track_id} | 下行撞线 | 下行撞线总数: {self.down_count} | 下行id列表: {self.list_overlapping_blue_polygon}')
+                        # print(
+                        #     f'类别: {label} | id: {track_id} | 下行撞线 | 下行撞线总数: {self.down_count} | 下行id列表: {self.list_overlapping_blue_polygon}')
 
                         # 删除 蓝polygon list 中的此id
                         self.list_overlapping_blue_polygon.remove(track_id)
@@ -217,7 +221,15 @@ class camera(object):
                 self.pos[track_id] = (center_x, center_y)
                 if self.last_pos.get(track_id) is not None:
                     dis_pix = self.last_pos[track_id][1] - self.pos[track_id][1]
-                    self.speed[track_id] = self.REAL_WIDTH(dis_pix) * self.FPS * 3.6
+                    self.speed[track_id] = self.REAL_WIDTH(self.main_self.alt, dis_pix) * self.FPS * 3.6 \
+                                           + self.main_self.ground_speed
+                    # print(self.REAL_WIDTH(dis_pix, self.main_self.alt))
+                    # print(dis_pix)
+                    if abs(self.speed[track_id]) >= self.main_self.speed_limit:
+                        c1, c2 = (x1, y1), (x2, y2)
+                        cv2.rectangle(output_image_frame, c1, c2, (0, 0, 255), thickness=round(
+                            0.002 * (output_image_frame.shape[0] + output_image_frame.shape[1]) * 0.5) + 1,
+                                      lineType=cv2.LINE_AA)
                     cv2.putText(output_image_frame, str(self.speed[track_id])[0:4], (x1, y1 + 20),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 0), 4)
                 else:
@@ -260,7 +272,7 @@ class camera(object):
         output_image_frame = cv2.putText(img=output_image_frame, text=text_draw,
                                          org=self.draw_text_postion,
                                          fontFace=self.font_draw_number,
-                                         fontScale=1, color=(255, 255, 255), thickness=2)
+                                         fontScale=1, color=(255, 255, 255), thickness=1)
 
         return output_image_frame, self.up_count, self.down_count
         # cv2.imshow('demo', output_image_frame)
